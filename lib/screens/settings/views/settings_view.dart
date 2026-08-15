@@ -14,7 +14,7 @@ class SettingsView extends StatefulWidget {
 
 class _SettingsViewState extends State<SettingsView> {
   final SettingsController _controller = SettingsController();
-  final AuthService _authService = const AuthService();
+  final AuthService _authService = AuthService();
 
   bool _isLoggedIn = false;
   bool _isAuthenticating = false;
