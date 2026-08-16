@@ -11,6 +11,8 @@ class AuthService {
   late final Dio _dio;
   late final CookieJar _cookieJar;
 
+  Dio get client => _dio;
+
   bool _isLoggedIn = false;
 
   AuthService() {
