@@ -1,5 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import '../widgets/next_event_card.dart';
+import '../widgets/calendar_connect_view.dart';
+import '../../../models/timetable_event.dart';
 import '../../../services/google_calendar_service.dart';
 
 class TimetableView extends StatefulWidget {
@@ -13,248 +16,106 @@ class _TimetableViewState extends State<TimetableView> {
   final GoogleCalendarService _googleCalendarService =
   GoogleCalendarService();
 
+  List<TimetableEvent> _events = [];
+
+  bool _isConnected = false;
+  bool _isLoading = false;
+  String? _error;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 2, 61, 138),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.calendar_month_rounded,
-                    size: 48,
-                    color: Color(0xFF023E8A),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                const Text(
-                  'Connect your calendar',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Text(
-                  'Connect your Google Calendar to import '
-                      'your college timetable automatically.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.45,
-                    color: Colors.white.withValues(alpha: 0.78),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 58,
-                  child: _GoogleConnectButton(
-                    onPressed: () async {
-                      try {
-                        final account = await _googleCalendarService.signIn();
-
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        final events = await _googleCalendarService.fetchTimetableEvents(
-                          account,
-                        );
-
-                        for (final event in events) {
-                          debugPrint(
-                            'TIMETABLE: '
-                                '${event.subject} | '
-                                '${event.room} | '
-                                '${event.startTime} → '
-                                '${event.endTime}',
-                          );
-                        }
-
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Found ${events.length} timetable events',
-                            ),
-                          ),
-                        );
-                      } catch (error) {
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Calendar error: $error'),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: _buildContent(),
       ),
     );
   }
-}
 
-class _GoogleConnectButton extends StatelessWidget {
-  const _GoogleConnectButton({
-    required this.onPressed,
-  });
-
-  final Future<void> Function() onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 18,
-          sigmaY: 18,
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
         ),
-        child: Container(
-          height: 58,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
+      );
+    }
 
-            // Deep frosted white
-            color: const Color(0xFFF8FCFF).withValues(alpha: 0.40),
+    if (_isConnected) {
+      return _buildTimetable();
+    }
 
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.30),
-              width: 1.2,
-            ),
+    return CalendarConnectView(
+      onConnect: _connectGoogleCalendar,
+      error: _error,
+    );  }
 
-            boxShadow: [
-              // Floating shadow
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
+  // ---------------------------------------------------------------------------
+  // GOOGLE LOGIN + CALENDAR FETCH
+  // ---------------------------------------------------------------------------
 
-              // Soft blue ambient glow
-              BoxShadow(
-                color: const Color(0xFFBDE3FF).withValues(alpha: 0.25),
-                blurRadius: 18,
-                spreadRadius: -2,
-              ),
-            ],
+  Future<void> _connectGoogleCalendar() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final account = await _googleCalendarService.signIn();
+
+      final events = await _googleCalendarService.fetchTimetableEvents(
+        account,
+      );
+
+      for (final event in events) {
+        debugPrint(
+          'TIMETABLE: '
+              '${event.subject} | '
+              '${event.room} | '
+              '${event.startTime} → '
+              '${event.endTime}',
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _events = events;
+        _isConnected = true;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _error = 'Calendar error: $error';
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // TIMETABLE VIEW
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTimetable() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: _events.isEmpty
+            ? const Text(
+          'No timetable events found.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
           ),
-
-          child: Stack(
-            children: [
-              // Top glass reflection
-              Positioned(
-                left: 10,
-                right: 10,
-                top: 2,
-                height: 20,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.42),
-                          Colors.white.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Inner edge / refraction
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(32),
-                  onTap: onPressed,
-                  splashColor: const Color(0xFF5BAEFF)
-                      .withValues(alpha: 0.16),
-                  highlightColor: Colors.white.withValues(alpha: 0.18),
-
-                  child: const Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_circle_rounded,
-                          color: Color(0xFF023E8A),
-                          size: 25,
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Continue with Google',
-                          style: TextStyle(
-                            color: Color(0xFF023E8A),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        )
+            : NextEventCard(
+          event: _events.first,
         ),
       ),
     );
