@@ -21,7 +21,6 @@ class WeekSelector extends StatelessWidget {
     );
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(5, (index) {
         final date = monday.add(Duration(days: index));
 
@@ -30,7 +29,8 @@ class WeekSelector extends StatelessWidget {
           selectedDate,
         );
 
-        return Expanded(
+        return SizedBox(
+          width: 76,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: GestureDetector(
@@ -40,13 +40,14 @@ class WeekSelector extends StatelessWidget {
                 height: 76,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.28)
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? const Color(0xFFEAF5FF).withValues(alpha: 0.20)
+                      : const Color(0xFFEAF5FF).withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.45)
-                        : Colors.white.withValues(alpha: 0.12),
+                        ? Colors.white.withValues(alpha: 0.35)
+                        : Colors.white.withValues(alpha: 0.10),
+                    width: 1,
                   ),
                 ),
                 child: Column(
@@ -75,18 +76,6 @@ class WeekSelector extends StatelessWidget {
                             : FontWeight.w500,
                       ),
                     ),
-
-                    const SizedBox(height: 4),
-
-                    if (hasEvents(date))
-                      Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
                   ],
                 ),
               ),

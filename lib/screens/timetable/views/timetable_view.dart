@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/next_event_card.dart';
+import 'timetable_content_view.dart';
 import '../widgets/calendar_connect_view.dart';
 import '../../../models/timetable_event.dart';
 import '../../../services/google_calendar_service.dart';
@@ -42,7 +42,9 @@ class _TimetableViewState extends State<TimetableView> {
     }
 
     if (_isConnected) {
-      return _buildTimetable();
+      return TimetableContentView(
+        events: _events,
+      );
     }
 
     return CalendarConnectView(
@@ -96,28 +98,5 @@ class _TimetableViewState extends State<TimetableView> {
         _error = 'Calendar error: $error';
       });
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // TIMETABLE VIEW
-  // ---------------------------------------------------------------------------
-
-  Widget _buildTimetable() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: _events.isEmpty
-            ? const Text(
-          'No timetable events found.',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        )
-            : NextEventCard(
-          event: _events.first,
-        ),
-      ),
-    );
   }
 }
