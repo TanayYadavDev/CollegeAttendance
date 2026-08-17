@@ -87,16 +87,20 @@ class _TimetableViewState extends State<TimetableView> {
                           return;
                         }
 
-                        if (account != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Connected as ${account.email}',
-                              ),
-                            ),
+                        final events = await _googleCalendarService.fetchTimetableEvents(
+                          account,
+                        );
+
+                        for (final event in events) {
+                          debugPrint(
+                            'TIMETABLE: '
+                                '${event.subject} | '
+                                '${event.room} | '
+                                '${event.startTime} → '
+                                '${event.endTime}',
                           );
                         }
-                      } catch (error) {
+
                         if (!context.mounted) {
                           return;
                         }
@@ -104,8 +108,18 @@ class _TimetableViewState extends State<TimetableView> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Google Sign-In failed: $error',
+                              'Found ${events.length} timetable events',
                             ),
+                          ),
+                        );
+                      } catch (error) {
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Calendar error: $error'),
                           ),
                         );
                       }
