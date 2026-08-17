@@ -1,8 +1,17 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../../services/google_calendar_service.dart';
 
-class TimetableView extends StatelessWidget {
+class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
+
+  @override
+  State<TimetableView> createState() => _TimetableViewState();
+}
+
+class _TimetableViewState extends State<TimetableView> {
+  final GoogleCalendarService _googleCalendarService =
+  GoogleCalendarService();
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +79,36 @@ class TimetableView extends StatelessWidget {
                   width: double.infinity,
                   height: 58,
                   child: _GoogleConnectButton(
-                    onPressed: () {
-                      // Google OAuth will be connected here.
+                    onPressed: () async {
+                      try {
+                        final account = await _googleCalendarService.signIn();
+
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        if (account != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Connected as ${account.email}',
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (error) {
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Google Sign-In failed: $error',
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -89,7 +126,7 @@ class _GoogleConnectButton extends StatelessWidget {
     required this.onPressed,
   });
 
-  final VoidCallback onPressed;
+  final Future<void> Function() onPressed;
 
   @override
   Widget build(BuildContext context) {
