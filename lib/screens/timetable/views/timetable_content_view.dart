@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 import '../widgets/timetable_event_card.dart';
 import '../../../models/timetable_event.dart';
 import '../widgets/next_event_card.dart';
 import '../widgets/week_selector.dart';
+
 
 class TimetableContentView extends StatefulWidget {
   const TimetableContentView({
@@ -22,6 +24,126 @@ class TimetableContentView extends StatefulWidget {
 
 class _TimetableContentViewState extends State<TimetableContentView> {
   DateTime _selectedDate = DateTime.now();
+
+  Timer? _timeRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    print('TIMER: initState()');
+    print('TIMER: initial events = ${widget.events.length}');
+
+    _scheduleTimeRefresh();
+  }
+
+  void _scheduleTimeRefresh() {
+    print('TIMER: _scheduleTimeRefresh() called');
+
+    _timeRefreshTimer?.cancel();
+    print('TIMER: previous timer cancelled');
+
+    final now = DateTime.now();
+    print('TIMER: now = $now');
+    print('TIMER: events count = ${widget.events.length}');
+
+    DateTime? nextRefresh;
+
+    for (final event in widget.events) {
+      final startTime = event.startTime.toLocal();
+      final endTime = event.endTime.toLocal();
+
+      final transitionTime = endTime.subtract(
+        const Duration(minutes: 25),
+      );
+
+      print(
+        'TIMER: ${event.subject} | '
+            'start=$startTime | '
+            'end=$endTime | '
+            'transition=$transitionTime',
+      );
+
+      if (transitionTime.isAfter(now)) {
+        print(
+          'TIMER: ${event.subject} transition is in the future',
+        );
+
+        if (nextRefresh == null ||
+            transitionTime.isBefore(nextRefresh)) {
+          nextRefresh = transitionTime;
+
+          print(
+            'TIMER: NEW NEXT REFRESH = $nextRefresh '
+                '(${event.subject})',
+          );
+        }
+      } else {
+        print(
+          'TIMER: ${event.subject} transition already passed',
+        );
+      }
+    }
+
+    if (nextRefresh == null) {
+      print('TIMER: NO FUTURE TRANSITION FOUND');
+      return;
+    }
+
+    final duration = nextRefresh.difference(now);
+
+    print(
+      'TIMER: scheduling timer for $duration '
+          '(at $nextRefresh)',
+    );
+
+    _timeRefreshTimer = Timer(
+      duration,
+          () {
+        print('TIMER: 🔥 TIMER FIRED at ${DateTime.now()}');
+
+        if (!mounted) {
+          print('TIMER: widget is NOT mounted, stopping');
+          return;
+        }
+
+        print('TIMER: calling setState()');
+
+        setState(() {});
+
+        print('TIMER: setState completed');
+
+        _scheduleTimeRefresh();
+      },
+    );
+
+    print('TIMER: timer created successfully');
+  }
+
+  @override
+  void didUpdateWidget(covariant TimetableContentView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print(
+      'TIMER: didUpdateWidget | '
+          'old events=${oldWidget.events.length} | '
+          'new events=${widget.events.length}',
+    );
+    if (oldWidget.events != widget.events) {
+      print(
+        'TIMER: _scheduleTimeRefresh() | '
+            'events=${widget.events.length}',
+      );
+      _scheduleTimeRefresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    print('TIMER: dispose()');
+    _timeRefreshTimer?.cancel();
+    print('TIMER: timer cancelled');
+    super.dispose();
+  }
 
   TimetableEvent? get _nowEvent {
     final now = DateTime.now();
@@ -57,6 +179,13 @@ class _TimetableContentViewState extends State<TimetableContentView> {
     final nowEvent = _nowEvent;
     final nextEvent = _nextEvent;
     final displayEvent = nowEvent ?? nextEvent;
+
+    print(
+      'UI: rebuild | '
+          'time=${DateTime.now()} | '
+          'NOW=${nowEvent?.subject} | '
+          'NEXT=${nextEvent?.subject}',
+    );
 
     return Column(
       children: [
