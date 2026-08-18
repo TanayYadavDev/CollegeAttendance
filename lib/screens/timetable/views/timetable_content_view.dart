@@ -9,8 +9,10 @@ class TimetableContentView extends StatefulWidget {
   const TimetableContentView({
     super.key,
     required this.events,
+    required this.onRefresh,
   });
 
+  final Future<void> Function() onRefresh;
   final List<TimetableEvent> events;
 
   @override
@@ -84,6 +86,7 @@ class _TimetableContentViewState extends State<TimetableContentView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
                 // -------------------------------------------------------
                 // HORIZONTAL DAY SCROLL
                 // -------------------------------------------------------
@@ -158,16 +161,21 @@ class _TimetableContentViewState extends State<TimetableContentView> {
     // VERTICAL EVENT SCROLL
     // ---------------------------------------------------------------
 
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: selectedEvents.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final event = selectedEvents[index];
-        return TimetableEventCard(
-          event: event,
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      color: const Color(0xFF023E8A),
+      backgroundColor: const Color(0xFFEAF5FF),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(top: 8),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: selectedEvents.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          return TimetableEventCard(
+            event: selectedEvents[index],
+          );
+        },
+      ),
     );
   }
 }

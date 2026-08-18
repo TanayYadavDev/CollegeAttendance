@@ -14,7 +14,7 @@ class GoogleCalendarService {
   ];
 
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-
+  GoogleSignInAccount? _account;
   bool _initialized = false;
 
   Future<void> initialize() async {
@@ -32,13 +32,37 @@ class GoogleCalendarService {
   Future<GoogleSignInAccount> signIn() async {
     await initialize();
 
-    if (!_googleSignIn.supportsAuthenticate()) {
+    if (! _googleSignIn.supportsAuthenticate()) {
       throw StateError(
         'Google Sign-In authentication is not supported on this platform.',
       );
     }
+    final account = await _googleSignIn.authenticate();
+    print(
+      'GOOGLE: signed in as ${account.email}',
+    );
+    _account = account;
+    return account;
+  }
 
-    return _googleSignIn.authenticate();
+  Future<List<TimetableEvent>> refreshTimetableEvents({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final account = _account;
+    print(
+      'GOOGLE: stored account = ${_account?.email}',
+    );
+    if (account == null) {
+      throw StateError(
+        'No Google account is connected.',
+      );
+    }
+    return fetchTimetableEvents(
+      account,
+      from: from,
+      to: to,
+    );
   }
 
   Future<List<TimetableEvent>> fetchTimetableEvents(
@@ -83,12 +107,6 @@ class GoogleCalendarService {
     }
 
     final calendarId = csfCalendar.id;
-
-    if (calendarId == null) {
-      throw StateError(
-        'CSF calendar does not have a valid calendar ID.',
-      );
-    }
 
     if (calendarId == null) {
       throw StateError(

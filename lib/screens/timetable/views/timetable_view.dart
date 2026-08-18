@@ -44,6 +44,7 @@ class _TimetableViewState extends State<TimetableView> {
     if (_isConnected) {
       return TimetableContentView(
         events: _events,
+        onRefresh: _refreshTimetable,
       );
     }
 
@@ -96,6 +97,39 @@ class _TimetableViewState extends State<TimetableView> {
       setState(() {
         _isLoading = false;
         _error = 'Calendar error: $error';
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // REFRESH TIMETABLE ON EVERY PULL
+  // ---------------------------------------------------------------------------
+
+  Future<void> _refreshTimetable() async {
+    debugPrint('REFRESH: triggered');
+
+    try {
+      final events =
+      await _googleCalendarService.refreshTimetableEvents();
+
+      debugPrint('REFRESH: fetched ${events.length} events');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _events = events;
+      });
+    } catch (error) {
+      debugPrint('REFRESH: ERROR $error');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = 'Refresh failed: $error';
       });
     }
   }
