@@ -6,9 +6,11 @@ class NextEventCard extends StatelessWidget {
   const NextEventCard({
     super.key,
     required this.event,
+    required this.label,
   });
 
   final TimetableEvent event;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +107,18 @@ class NextEventCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.78),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const Spacer(),
+
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ],

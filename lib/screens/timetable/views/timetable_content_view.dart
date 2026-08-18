@@ -23,37 +23,53 @@ class TimetableContentView extends StatefulWidget {
 class _TimetableContentViewState extends State<TimetableContentView> {
   DateTime _selectedDate = DateTime.now();
 
+  TimetableEvent? get _nowEvent {
+    final now = DateTime.now();
+
+    for (final event in widget.events) {
+      final start = event.startTime.toLocal();
+      final end = event.endTime.toLocal();
+
+      final nowUntilEnd = end.difference(now);
+      final isOngoing = now.isAfter(start) && now.isBefore(end);
+
+      if (isOngoing && nowUntilEnd > const Duration(minutes: 25)) {
+        return event;
+      }
+    }
+    return null;
+  }
+
   TimetableEvent? get _nextEvent {
     final now = DateTime.now();
 
     final upcomingEvents = widget.events.where((event) {
-      return event.endTime.toLocal().isAfter(now);
+      final start = event.startTime.toLocal();
+      return start.isAfter(now);
     }).toList();
 
-    if (upcomingEvents.isEmpty) {
-      return null;
-    }
-
-    upcomingEvents.sort(
-          (a, b) => a.startTime.compareTo(b.startTime),
-    );
-
-    return upcomingEvents.first;
+    upcomingEvents.sort((a, b) => a.startTime.compareTo(b.startTime),);
+    return upcomingEvents.isEmpty ? null : upcomingEvents.first;
   }
 
   @override
   Widget build(BuildContext context) {
+    final nowEvent = _nowEvent;
     final nextEvent = _nextEvent;
+    final displayEvent = nowEvent ?? nextEvent;
+
     return Column(
       children: [
+
         // ---------------------------------------------------------------
         // STATIC NEXT EVENT
         // ---------------------------------------------------------------
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-          child: nextEvent != null
+          child: displayEvent != null
               ? NextEventCard(
-            event: nextEvent,
+            event: displayEvent,
+            label: nowEvent != null ? 'NOW' : 'NEXT',
           )
               : const SizedBox.shrink(),
         ),
